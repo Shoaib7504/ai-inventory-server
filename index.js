@@ -8,11 +8,16 @@ const dns = require("dns");
 // Change DNS servers
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
-//  Use Render's dynamic PORT or fallback to 3000
+// Use Render's dynamic PORT or fallback to 3000
 const port = process.env.PORT || 3000;
 
-//  Load Firebase service account from environment variable (never commit service.json)
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+// Load Firebase service account from environment variable (never commit serviceKey.json)
+let serviceAccount;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else {
+  serviceAccount = require("./serviceKey.json");
+}
 
 // Initialize Firebase Admin
 admin.initializeApp({
@@ -36,7 +41,7 @@ const client = new MongoClient(uri, {
   },
 });
 
-//  Firebase Token Verification Middleware
+// Firebase Token Verification Middleware
 const verifyToken = async (req, res, next) => {
   const authorization = req.headers.authorization;
 
@@ -48,7 +53,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken; // attach decoded user to request
+    req.user = decodedToken;
     next();
   } catch (error) {
     return res.status(401).send({ message: "Unauthorized access." });
@@ -62,7 +67,7 @@ app.get("/", (req, res) => {
 
 async function run() {
   try {
-    //  Connect once on startup
+    // Connect once on startup
     await client.connect();
 
     const db = client.db("model-db");
@@ -103,7 +108,7 @@ async function run() {
       }
     });
 
-    // POST add a new model (public — add verifyToken if you want it protected)
+    // POST add a new model (public)
     app.post("/models", async (req, res) => {
       try {
         const data = req.body;
@@ -225,12 +230,19 @@ async function run() {
     console.log(" Connected to MongoDB successfully!");
   } catch (error) {
     console.error("❌ Failed to connect to MongoDB:", error);
-    process.exit(1); // Exit if DB connection fails
+    process.exit(1);
   }
 }
 
 run();
 
+// Graceful shutdown — close MongoDB on process exit
+process.on("SIGINT", async () => {
+  await client.close();
+  console.log("MongoDB connection closed.");
+  process.exit(0);
+});
+
 app.listen(port, () => {
-  console.log(`🚀 Server is running on port ${port}`);
+  console.log(` Server is running on port ${port}`);
 });
