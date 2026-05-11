@@ -1,0 +1,11 @@
+# Node
+node_modules/
+
+# Environment / secrets
+.env
+
+serviceKey.json
+*.json
+
+
+
