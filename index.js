@@ -15,7 +15,10 @@ const port = process.env.PORT || 3000;
 let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   // Production (Render): decode base64 then parse JSON
-  const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, "base64").toString("utf-8");
+  const decoded = Buffer.from(
+    process.env.FIREBASE_SERVICE_ACCOUNT,
+    "base64"
+  ).toString("utf-8");
   serviceAccount = JSON.parse(decoded);
 } else {
   // Local development: read directly from file
@@ -27,8 +30,38 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// Middleware
-app.use(cors());
+//  CORS CONFIGURATION
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://ai-manager-inventory.web.app",
+  "https://ai-manager-inventory.firebaseapp.com",
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error(`CORS policy: Origin ${origin} not allowed.`));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+};
+
+// Apply CORS middleware BEFORE all routes
+app.use(cors(corsOptions));
+
+// Handle preflight OPTIONS requests for all routes
+app.options("*", cors(corsOptions));
+
+
 app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -44,7 +77,7 @@ const client = new MongoClient(uri, {
   },
 });
 
-// Firebase Token Verification Middleware
+// FIREBASE TOKEN VERIFICATION MIDDLEWARE
 const verifyToken = async (req, res, next) => {
   const authorization = req.headers.authorization;
 
@@ -63,11 +96,12 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-// Root route
+//  ROOT ROUTE 
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
+// MAIN DATABASE FUNCTION─
 async function run() {
   try {
     // Connect once on startup
@@ -77,7 +111,7 @@ async function run() {
     const modelCollection = db.collection("models");
     const downloadCollection = db.collection("downloads");
 
-    // ─── MODEL ROUTES ───────────────────────────────────────────────
+    // ─── MODEL ROUTES 
 
     // GET all models (public)
     app.get("/models", async (req, res) => {
@@ -85,7 +119,9 @@ async function run() {
         const result = await modelCollection.find().toArray();
         res.send(result);
       } catch (error) {
-        res.status(500).send({ message: "Failed to fetch models.", error: error.message });
+        res
+          .status(500)
+          .send({ message: "Failed to fetch models.", error: error.message });
       }
     });
 
@@ -107,7 +143,9 @@ async function run() {
 
         res.send({ success: true, result });
       } catch (error) {
-        res.status(500).send({ message: "Failed to fetch model.", error: error.message });
+        res
+          .status(500)
+          .send({ message: "Failed to fetch model.", error: error.message });
       }
     });
 
@@ -123,7 +161,9 @@ async function run() {
         const result = await modelCollection.insertOne(data);
         res.send(result);
       } catch (error) {
-        res.status(500).send({ message: "Failed to add model.", error: error.message });
+        res
+          .status(500)
+          .send({ message: "Failed to add model.", error: error.message });
       }
     });
 
@@ -153,7 +193,9 @@ async function run() {
 
         res.send({ success: true, result });
       } catch (error) {
-        res.status(500).send({ message: "Failed to update model.", error: error.message });
+        res
+          .status(500)
+          .send({ message: "Failed to update model.", error: error.message });
       }
     });
 
@@ -176,7 +218,9 @@ async function run() {
 
         res.send({ success: true, result });
       } catch (error) {
-        res.status(500).send({ message: "Failed to delete model.", error: error.message });
+        res
+          .status(500)
+          .send({ message: "Failed to delete model.", error: error.message });
       }
     });
 
@@ -186,17 +230,24 @@ async function run() {
         const email = req.query.email;
 
         if (!email) {
-          return res.status(400).send({ message: "Email query parameter is required." });
+          return res
+            .status(400)
+            .send({ message: "Email query parameter is required." });
         }
 
-        const result = await modelCollection.find({ createdBy: email }).toArray();
+        const result = await modelCollection
+          .find({ createdBy: email })
+          .toArray();
         res.send(result);
       } catch (error) {
-        res.status(500).send({ message: "Failed to fetch your models.", error: error.message });
+        res.status(500).send({
+          message: "Failed to fetch your models.",
+          error: error.message,
+        });
       }
     });
 
-    // ─── DOWNLOAD ROUTES ─────────────────────────────────────────────
+    // ─── DOWNLOAD ROUTES 
 
     // POST log a download
     app.post("/downloads", async (req, res) => {
@@ -210,7 +261,9 @@ async function run() {
         const result = await downloadCollection.insertOne(data);
         res.send(result);
       } catch (error) {
-        res.status(500).send({ message: "Failed to log download.", error: error.message });
+        res
+          .status(500)
+          .send({ message: "Failed to log download.", error: error.message });
       }
     });
 
@@ -220,13 +273,20 @@ async function run() {
         const email = req.query.email;
 
         if (!email) {
-          return res.status(400).send({ message: "Email query parameter is required." });
+          return res
+            .status(400)
+            .send({ message: "Email query parameter is required." });
         }
 
-        const result = await downloadCollection.find({ downloadedBy: email }).toArray();
+        const result = await downloadCollection
+          .find({ downloadedBy: email })
+          .toArray();
         res.send(result);
       } catch (error) {
-        res.status(500).send({ message: "Failed to fetch your downloads.", error: error.message });
+        res.status(500).send({
+          message: "Failed to fetch your downloads.",
+          error: error.message,
+        });
       }
     });
 
