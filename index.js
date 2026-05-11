@@ -11,11 +11,14 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]);
 // Use Render's dynamic PORT or fallback to 3000
 const port = process.env.PORT || 3000;
 
-// Load Firebase service account from environment variable (never commit serviceKey.json)
+// Load Firebase service account
 let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  // Production (Render): decode base64 then parse JSON
+  const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, "base64").toString("utf-8");
+  serviceAccount = JSON.parse(decoded);
 } else {
+  // Local development: read directly from file
   serviceAccount = require("./serviceKey.json");
 }
 
@@ -229,7 +232,7 @@ async function run() {
 
     console.log(" Connected to MongoDB successfully!");
   } catch (error) {
-    console.error("❌ Failed to connect to MongoDB:", error);
+    console.error(" Failed to connect to MongoDB:", error);
     process.exit(1);
   }
 }
