@@ -52,14 +52,12 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+  optionsSuccessStatus: 200,
 };
 
 // Apply CORS middleware BEFORE all routes
 app.use(cors(corsOptions));
 
-// Handle preflight OPTIONS requests for all routes
-app.options("*", cors(corsOptions));
 
 
 app.use(express.json());
@@ -77,7 +75,7 @@ const client = new MongoClient(uri, {
   },
 });
 
-// FIREBASE TOKEN VERIFICATION MIDDLEWARE
+// FIREBASE TOKEN VERIFICATION MIDDLEWARE 
 const verifyToken = async (req, res, next) => {
   const authorization = req.headers.authorization;
 
@@ -101,7 +99,7 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-// MAIN DATABASE FUNCTION─
+// MAIN DATABASE FUNCTION 
 async function run() {
   try {
     // Connect once on startup
@@ -111,8 +109,7 @@ async function run() {
     const modelCollection = db.collection("models");
     const downloadCollection = db.collection("downloads");
 
-    // ─── MODEL ROUTES 
-
+    // MODEL ROUTES
     // GET all models (public)
     app.get("/models", async (req, res) => {
       try {
@@ -247,7 +244,7 @@ async function run() {
       }
     });
 
-    // ─── DOWNLOAD ROUTES 
+    // ─── DOWNLOAD ROUTES ───────────────────────────────────────────────────────
 
     // POST log a download
     app.post("/downloads", async (req, res) => {
