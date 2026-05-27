@@ -193,7 +193,16 @@ app.get("/my-downloads", verifyToken, async (req, res) => {
     res.status(500).send({ message: "Failed to fetch your downloads.", error: error.message });
   }
 });
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
 
+setInterval(async () => {
+  try {
+    const res = await fetch(RENDER_URL + "/");
+    console.log(`[Keep-alive] ping OK — status ${res.status}`);
+  } catch (err) {
+    console.error("[Keep-alive] ping failed:", err.message);
+  }
+}, 14 * 60 * 1000);
 process.on("SIGINT", async () => {
   await client.close();
   console.log("MongoDB connection closed.");
