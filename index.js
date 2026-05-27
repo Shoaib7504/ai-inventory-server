@@ -124,7 +124,7 @@ app.post("/models", verifyToken, async (req, res) => {
 });
 
 // PUT update a model
-app.put("/models/:id", verifyToken, async (req, res) => {
+app.put("/models/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
